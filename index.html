@@ -5,12 +5,11 @@
     <title>Roblox Image Converter HD</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #121218; color: #e1e1e6; text-align: center; padding: 20px; }
-        .box { background: #1e1e26; padding: 25px; border-radius: 12px; display: inline-block; max-width: 520px; width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.5); border: 1px solid #2d2d3a; }
-        label { display: block; text-align: left; margin-top: 12px; font-weight: 600; font-size: 13px; color: #a0a0b0; }
-        input, button { margin: 6px 0; padding: 10px; width: 100%; border-radius: 6px; border: 1px solid #333344; background: #282836; color: #fff; box-sizing: border-box; }
-        button { background: #28a745; font-weight: bold; cursor: pointer; border: none; margin-top: 15px; font-size: 14px; transition: 0.2s; }
+        .box { background: #1e1e26; padding: 25px; border-radius: 12px; display: inline-block; max-width: 480px; width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.5); border: 1px solid #2d2d3a; }
+        label { display: block; text-align: left; margin-top: 14px; font-weight: 600; font-size: 13px; color: #a0a0b0; }
+        input, button { margin: 6px 0; padding: 12px; width: 100%; border-radius: 6px; border: 1px solid #333344; background: #282836; color: #fff; box-sizing: border-box; font-size: 13px; }
+        button { background: #28a745; font-weight: bold; cursor: pointer; border: none; margin-top: 18px; font-size: 14px; transition: 0.2s; }
         button:hover { background: #218838; }
-        textarea { width: 100%; height: 120px; background: #121218; color: #00ff88; border: 1px solid #333344; border-radius: 6px; font-family: monospace; font-size: 11px; box-sizing: border-box; }
         canvas { display: none; }
     </style>
 </head>
@@ -22,28 +21,22 @@
     <label>1. Выберите файл картинки:</label>
     <input type="file" id="imageInput" accept="image/*">
 
-    <label>2. Масштаб фото / Разрешение (Ширина в блоках):</label>
+    <label>2. Разрешение (Ширина в блоках):</label>
     <input type="number" id="qualityInput" value="40" min="5" max="300" placeholder="Количество блоков по ширине">
 
     <label>3. Физический размер одного блока (в студах):</label>
     <input type="number" id="blockSizeInput" value="1" step="0.1" min="0.1" max="10" placeholder="Например: 0.5, 1, 2">
 
-    <button onclick="convertImage()">Конвертировать в JSON</button>
-
-    <label>4. Данные конфигурации:</label>
-    <textarea id="jsonOutput" readonly placeholder="Здесь появятся готовые данные..."></textarea>
-    
-    <button onclick="downloadJSON()" style="background: #007bff;">💾 Скачать image.json для Workspace</button>
+    <button onclick="convertAndDownload()">🚀 Конвертировать и скачать image.json</button>
 </div>
 
 <canvas id="canvas"></canvas>
 
 <script>
-function convertImage() {
+function convertAndDownload() {
     const fileInput = document.getElementById('imageInput');
     const quality = parseInt(document.getElementById('qualityInput').value) || 40;
     const blockSize = parseFloat(document.getElementById('blockSizeInput').value) || 1;
-    const jsonOutput = document.getElementById('jsonOutput');
 
     if (!fileInput.files[0]) {
         alert("Пожалуйста, выберите файл картинки!");
@@ -96,26 +89,18 @@ function convertImage() {
                 pixels: pixels
             };
 
-            jsonOutput.value = JSON.stringify(resultObject);
-            alert("Готово!\n• Разрешение фото: " + width + "x" + height + " блоков\n• Всего блоков: " + pixels.length + "\n• Размер каждого блока: " + blockSize + " студ.");
+            const jsonStr = JSON.stringify(resultObject);
+            const blob = new Blob([jsonStr], { type: "application/json" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "image.json";
+            a.click();
+
+            alert("Файл image.json успешно сгенерирован и скачан!\n• Блоков: " + pixels.length + "\n• Размер файла сохраните в папку workspace вашего эксплойта.");
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
-}
-
-function downloadJSON() {
-    const jsonOutput = document.getElementById('jsonOutput');
-    if (!jsonOutput.value) {
-        alert("Сначала сгенерируйте данные!");
-        return;
-    }
-    
-    const blob = new Blob([jsonOutput.value], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "image.json";
-    a.click();
 }
 </script>
 </body>
