@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Roblox Image Converter</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #fff; text-align: center; padding: 20px; }
+        .box { background: #2d2d2d; padding: 20px; border-radius: 8px; display: inline-block; max-width: 500px; width: 100%; }
+        input, button { margin: 10px 0; padding: 10px; width: 90%; border-radius: 4px; border: none; }
+        button { background: #28a745; color: white; font-weight: bold; cursor: pointer; }
+        button:hover { background: #218838; }
+        textarea { width: 90%; height: 150px; background: #111; color: #0f0; border: 1px solid #444; font-family: monospace; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>Roblox Image to JSON Converter</h2>
+    
+    <label>1. Выбери картинку с ПК:</label><br>
+    <input type="file" id="imageInput" accept="image/*"><br>
+
+    <label>2. Качество (Ширина в блоках):</label><br>
+    <input type="number" id="qualityInput" value="30" min="5" max="150"><br>
+
+    <button onclick="convertImage()">Конвертировать в JSON</button><br><br>
+
+    <label>3. Результат (Скопируй этот JSON):</label><br>
+    <textarea id="jsonOutput" readonly placeholder="Здесь появится JSON данные..."></textarea><br>
+    <button onclick="copyToClipboard()" style="background: #007bff;">Скопировать в буфер</button>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+function convertImage() {
+    const fileInput = document.getElementById('imageInput');
+    const quality = parseInt(document.getElementById('qualityInput').value) || 30;
+    const jsonOutput = document.getElementById('jsonOutput');
+
+    if (!fileInput.files[0]) {
+        alert("Сначала выбери файл картинки!");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Расчет высоты с сохранением пропорций
+            const aspectRatio = img.height / img.width;
+            const width = quality;
+            const height = Math.round(width * aspectRatio);
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Рисуем уменьшенную картинку
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const imgData = ctx.getImageData(0, 0, width, height).data;
+            const pixels = [];
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const index = (y * width + x) * 4;
+                    const r = imgData[index];
+                    const g = imgData[index + 1];
+                    const b = imgData[index + 2];
+                    const a = imgData[index + 3];
+
+                    // Игнорируем прозрачные пиксели
+                    if (a > 50) {
+                        pixels.push({
+                            x: x,
+                            y: height - y - 1, // Переворачиваем оси под Roblox
+                            color: [r, g, b]
+                        });
+                    }
+                }
+            }
+
+            jsonOutput.value = JSON.stringify(pixels);
+            alert("Готово! Создано блоков: " + pixels.length);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function copyToClipboard() {
+    const jsonOutput = document.getElementById('jsonOutput');
+    jsonOutput.select();
+    document.execCommand("copy");
+    alert("Скопировано!");
+}
+</script>
+
+</body>
+</html>
