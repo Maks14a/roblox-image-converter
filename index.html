@@ -21,11 +21,11 @@
     <label>1. Выберите файл картинки:</label>
     <input type="file" id="imageInput" accept="image/*">
 
-    <label>2. Разрешение (Ширина в блоках):</label>
-    <input type="number" id="qualityInput" value="40" min="5" max="300" placeholder="Количество блоков по ширине">
+    <label>2. Детализация (Ширина картинки в пикселях/блоках):</label>
+    <input type="number" id="qualityInput" value="60" min="5" max="500" placeholder="Например: 100 (для высокой детализации)">
 
-    <label>3. Физический размер одного блока (в студах):</label>
-    <input type="number" id="blockSizeInput" value="1" step="0.1" min="0.1" max="10" placeholder="Например: 0.5, 1, 2">
+    <label>3. Физический размер 1 пикселя в студах (например: 0.05):</label>
+    <input type="number" id="blockSizeInput" value="0.05" step="0.01" min="0.001" max="50" placeholder="Например: 0.05 или 1">
 
     <button onclick="convertAndDownload()">🚀 Конвертировать и скачать image.json</button>
 </div>
@@ -35,8 +35,8 @@
 <script>
 function convertAndDownload() {
     const fileInput = document.getElementById('imageInput');
-    const quality = parseInt(document.getElementById('qualityInput').value) || 40;
-    const blockSize = parseFloat(document.getElementById('blockSizeInput').value) || 1;
+    const quality = parseInt(document.getElementById('qualityInput').value) || 60;
+    const blockSize = parseFloat(document.getElementById('blockSizeInput').value) || 0.05;
 
     if (!fileInput.files[0]) {
         alert("Пожалуйста, выберите файл картинки!");
@@ -96,7 +96,7 @@ function convertAndDownload() {
             a.download = "image.json";
             a.click();
 
-            alert("Файл image.json успешно сгенерирован и скачан!\n• Блоков: " + pixels.length + "\n• Размер файла сохраните в папку workspace вашего эксплойта.");
+            alert("Файл image.json сохранен!\n• Всего блоков: " + pixels.length + "\n• Размер пикселя: " + blockSize + " студ.");
         };
         img.src = e.target.result;
     };
