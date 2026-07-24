@@ -8,19 +8,27 @@
         * { box-sizing: border-box; }
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #121218; 
-            color: #fff; 
+            background: #0f0f14; 
+            color: #f0f0f5; 
             margin: 0; 
             padding: 20px; 
             display: flex; 
             gap: 20px; 
             min-height: 100vh;
+            justify-content: center;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
         }
         .panel { 
-            background: #1e1e28; 
+            background: #181822; 
             padding: 20px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            border-radius: 16px; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6); 
+            border: 1px solid #282836;
         }
         .left-panel { 
             width: 360px; 
@@ -34,43 +42,75 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            justify-content: center; 
-            min-height: 400px; 
-            background: #181822;
+            justify-content: flex-start;
+            gap: 12px;
+            background: #12121a;
         }
-        h2 { margin-top: 0; color: #4da6ff; font-size: 18px; display: flex; align-items: center; gap: 8px; }
-        .group { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 12px; color: #aaa; font-weight: 600; }
+        h2 { margin: 0; color: #4da6ff; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+        .group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 12px; color: #aaa; font-weight: 600; display: flex; justify-content: space-between; }
         .input-row { display: flex; gap: 10px; align-items: center; }
         input[type="range"] { flex: 1; accent-color: #0073e6; cursor: pointer; }
         input[type="number"] { 
             width: 75px; 
-            background: #2a2a38; 
-            border: 1px solid #444; 
+            background: #242432; 
+            border: 1px solid #3d3d52; 
             color: #fff; 
             padding: 6px; 
             border-radius: 6px; 
             text-align: center; 
             font-size: 13px;
+            font-weight: bold;
         }
         input[type="file"] {
-            background: #2a2a38;
-            border: 1px dashed #555;
+            background: #242432;
+            border: 1px dashed #444;
             padding: 10px;
-            border-radius: 6px;
+            border-radius: 8px;
             color: #ccc;
             cursor: pointer;
+            width: 100%;
         }
-        canvas { 
-            border: 2px dashed #444; 
-            border-radius: 8px; 
-            max-width: 100%; 
-            max-height: 500px; 
-            background: #0a0a0e; 
-            image-rendering: pixelated; 
+        
+        /* ФИКСИРОВАННЫЙ БОЛЬШОЙ КОНТЕЙНЕР ПРЕВЬЮ */
+        .preview-viewport {
+            width: 500px;
+            height: 500px;
+            background: #08080c;
+            border: 2px solid #2a2a3d;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
         }
+        .preview-canvas {
+            max-width: 100%;
+            max-height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #4da6ff;
+            cursor: pointer;
+            user-select: none;
+            background: #222230;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 100%;
+        }
+        .toggle-row input { cursor: pointer; accent-color: #0073e6; width: 16px; height: 16px; }
+
         .stats-box { 
-            background: #282836; 
+            background: #222230; 
             padding: 12px; 
             border-radius: 8px; 
             border-left: 4px solid #0073e6; 
@@ -82,7 +122,7 @@
             background: #23a04b; 
             color: white; 
             border: none; 
-            padding: 12px; 
+            padding: 13px; 
             border-radius: 8px; 
             font-weight: bold; 
             cursor: pointer; 
@@ -94,54 +134,64 @@
 </head>
 <body>
 
-<div class="panel left-panel">
-    <h2>⚙️ Настройки картинки</h2>
-    
-    <div class="group">
-        <label>Выберите изображение:</label>
-        <input type="file" id="fileInput" accept="image/*">
+<div class="main-container">
+    <div class="panel left-panel">
+        <h2>⚙️ Настройки картинки</h2>
+        
+        <div class="group">
+            <label>Выберите изображение:</label>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <!-- Разрешение в пикселях -->
+        <div class="group">
+            <label><span>Детализация (качество/ширина):</span></label>
+            <div class="input-row">
+                <input type="range" id="resSlider" min="10" max="200" value="40">
+                <input type="number" id="resInput" value="40" min="10" max="200">
+            </div>
+        </div>
+
+        <!-- Размер 1 пикселя в студах -->
+        <div class="group">
+            <label><span>Размер пикселя X/Y (студы):</span></label>
+            <div class="input-row">
+                <input type="range" id="sizeSlider" min="0.01" max="1.0" step="0.01" value="0.05">
+                <input type="number" id="sizeInput" value="0.05" step="0.01" min="0.01" max="1.0">
+            </div>
+        </div>
+
+        <!-- Толщина блока в студах -->
+        <div class="group">
+            <label><span>Толщина блока Z (студы):</span></label>
+            <div class="input-row">
+                <input type="range" id="thickSlider" min="0.01" max="1.0" step="0.01" value="0.05">
+                <input type="number" id="thickInput" value="0.05" step="0.01" min="0.01" max="1.0">
+            </div>
+        </div>
+
+        <!-- Опция отображения пупырок (Studs) -->
+        <label class="toggle-row">
+            <input type="checkbox" id="studsToggle" checked>
+            <span>🧱 Пупырки Roblox (Studs / Сетка)</span>
+        </label>
+
+        <!-- Блок со статистикой -->
+        <div class="stats-box">
+            <div>📦 Всего блоков: <strong id="totalBlocks">0</strong> шт</div>
+            <div>📐 Габариты: <strong id="dimensions">0 x 0 x 0</strong> студов</div>
+            <div>🏷️ Масштаб: <strong id="scaleTag">Загрузите фото</strong></div>
+        </div>
+
+        <button class="btn" id="downloadBtn">📥 Скачать JSON для Roblox</button>
     </div>
 
-    <!-- Разрешение в пикселях -->
-    <div class="group">
-        <label>Детализация (ширина в пикселях):</label>
-        <div class="input-row">
-            <input type="range" id="resSlider" min="10" max="200" value="40">
-            <input type="number" id="resInput" value="40" min="10" max="200">
+    <div class="panel right-panel">
+        <h2>👁️ Вид в игре (500x500 Real-Time)</h2>
+        <div class="preview-viewport">
+            <canvas id="previewCanvas" class="preview-canvas"></canvas>
         </div>
     </div>
-
-    <!-- Размер 1 пикселя в студах -->
-    <div class="group">
-        <label>Размер пикселя X/Y (в студах):</label>
-        <div class="input-row">
-            <input type="range" id="sizeSlider" min="0.01" max="1.0" step="0.01" value="0.05">
-            <input type="number" id="sizeInput" value="0.05" step="0.01" min="0.01" max="1.0">
-        </div>
-    </div>
-
-    <!-- Толщина блока в студах -->
-    <div class="group">
-        <label>Толщина блока Z (в студах):</label>
-        <div class="input-row">
-            <input type="range" id="thickSlider" min="0.01" max="1.0" step="0.01" value="0.05">
-            <input type="number" id="thickInput" value="0.05" step="0.01" min="0.01" max="1.0">
-        </div>
-    </div>
-
-    <!-- Блок со статистикой -->
-    <div class="stats-box">
-        <div>📦 Всего блоков: <strong id="totalBlocks">0</strong> шт</div>
-        <div>📐 Габариты: <strong id="dimensions">0 x 0 x 0</strong> студов</div>
-        <div>🏷️ Масштаб: <strong id="scaleTag">Загрузите фото</strong></div>
-    </div>
-
-    <button class="btn" id="downloadBtn">📥 Скачать JSON для Roblox</button>
-</div>
-
-<div class="panel right-panel">
-    <h2>👁️ Превью постройки (Real-Time)</h2>
-    <canvas id="previewCanvas"></canvas>
 </div>
 
 <script>
@@ -152,6 +202,7 @@
     const sizeInput = document.getElementById('sizeInput');
     const thickSlider = document.getElementById('thickSlider');
     const thickInput = document.getElementById('thickInput');
+    const studsToggle = document.getElementById('studsToggle');
     
     const canvas = document.getElementById('previewCanvas');
     const ctx = canvas.getContext('2d');
@@ -159,7 +210,6 @@
     let loadedImage = null;
     let generatedPixels = [];
 
-    // Двусторонняя синхронизация Слайдер <-> Инпут с мгновенным Live-обновлением
     function setupSync(slider, input, callback) {
         slider.addEventListener('input', () => { 
             input.value = slider.value; 
@@ -177,6 +227,7 @@
     setupSync(resSlider, resInput, processImage);
     setupSync(sizeSlider, sizeInput, updateStats);
     setupSync(thickSlider, thickInput, updateStats);
+    studsToggle.addEventListener('change', renderPreview);
 
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -197,26 +248,106 @@
         const aspectRatio = loadedImage.height / loadedImage.width;
         const targetHeight = Math.round(targetWidth * aspectRatio);
 
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-
-        ctx.drawImage(loadedImage, 0, 0, targetWidth, targetHeight);
-        const imgData = ctx.getImageData(0, 0, targetWidth, targetHeight).data;
+        // Офскрин холст для подсчета чистых данных
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = targetWidth;
+        offCanvas.height = targetHeight;
+        const offCtx = offCanvas.getContext('2d');
+        offCtx.drawImage(loadedImage, 0, 0, targetWidth, targetHeight);
+        const imgData = offCtx.getImageData(0, 0, targetWidth, targetHeight).data;
 
         generatedPixels = [];
         for (let y = 0; y < targetHeight; y++) {
             for (let x = 0; x < targetWidth; x++) {
                 const index = (y * targetWidth + x) * 4;
                 const a = imgData[index + 3];
-                if (a > 50) { // Игнорируем прозрачные пиксели
+                if (a > 50) {
                     generatedPixels.push({
                         x: x,
-                        y: (targetHeight - 1) - y, // Точная координатная сетка без сдвигов
+                        y: (targetHeight - 1) - y, // Точные координаты под сетку Roblox
                         color: [imgData[index], imgData[index + 1], imgData[index + 2]]
                     });
                 }
             }
         }
+
+        renderPreview();
+    }
+
+    function renderPreview() {
+        if (!loadedImage) return;
+
+        const targetWidth = parseInt(resInput.value) || 40;
+        const aspectRatio = loadedImage.height / loadedImage.width;
+        const targetHeight = Math.round(targetWidth * aspectRatio);
+
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = targetWidth;
+        offCanvas.height = targetHeight;
+        const offCtx = offCanvas.getContext('2d');
+        offCtx.drawImage(loadedImage, 0, 0, targetWidth, targetHeight);
+        const imgData = offCtx.getImageData(0, 0, targetWidth, targetHeight).data;
+
+        // Масштабируем пиксели внутри окна 500x500
+        const maxBoxSize = 500;
+        let cellSize = Math.floor(maxBoxSize / Math.max(targetWidth, targetHeight));
+        if (cellSize < 1) cellSize = 1;
+
+        canvas.width = targetWidth * cellSize;
+        canvas.height = targetHeight * cellSize;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const drawStuds = studsToggle.checked;
+
+        for (let y = 0; y < targetHeight; y++) {
+            for (let x = 0; x < targetWidth; x++) {
+                const index = (y * targetWidth + x) * 4;
+                const r = imgData[index];
+                const g = imgData[index + 1];
+                const b = imgData[index + 2];
+                const a = imgData[index + 3];
+
+                if (a > 50) {
+                    const drawX = x * cellSize;
+                    const drawY = y * cellSize;
+
+                    // Отрисовка цвета блока
+                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    ctx.fillRect(drawX, drawY, cellSize, cellSize);
+
+                    // Отрисовка пупырок и грани блоков Roblox (Studs)
+                    if (drawStuds && cellSize >= 4) {
+                        // Граница (фаска блока)
+                        ctx.fillStyle = `rgba(0, 0, 0, 0.15)`;
+                        ctx.fillRect(drawX, drawY, cellSize, 1);
+                        ctx.fillRect(drawX, drawY, 1, cellSize);
+
+                        ctx.fillStyle = `rgba(255, 255, 255, 0.15)`;
+                        ctx.fillRect(drawX, drawY + cellSize - 1, cellSize, 1);
+                        ctx.fillRect(drawX + cellSize - 1, drawY, 1, cellSize);
+
+                        // Пупырка в центре (Stud)
+                        if (cellSize >= 7) {
+                            const centerX = drawX + cellSize / 2;
+                            const centerY = drawY + cellSize / 2;
+                            const radius = Math.max(1, cellSize * 0.22);
+
+                            ctx.beginPath();
+                            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                            ctx.fillStyle = `rgba(255, 255, 255, 0.25)`;
+                            ctx.fill();
+
+                            ctx.beginPath();
+                            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                            ctx.strokeStyle = `rgba(0, 0, 0, 0.25)`;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+        }
+
         updateStats();
     }
 
@@ -228,8 +359,12 @@
         document.getElementById('totalBlocks').innerText = count.toLocaleString();
 
         if (canvas.width && canvas.height) {
-            const widthStuds = (canvas.width * pxSize).toFixed(2);
-            const heightStuds = (canvas.height * pxSize).toFixed(2);
+            const targetWidth = parseInt(resInput.value) || 40;
+            const aspectRatio = loadedImage ? (loadedImage.height / loadedImage.width) : 1;
+            const targetHeight = Math.round(targetWidth * aspectRatio);
+
+            const widthStuds = (targetWidth * pxSize).toFixed(2);
+            const heightStuds = (targetHeight * pxSize).toFixed(2);
             document.getElementById('dimensions').innerText = `${widthStuds} x ${heightStuds} x ${thick.toFixed(2)}`;
 
             let tag = "";
@@ -248,8 +383,6 @@
         const data = {
             pixelSize: parseFloat(sizeInput.value) || 0.05,
             thickness: parseFloat(thickInput.value) || 0.05,
-            width: canvas.width,
-            height: canvas.height,
             pixels: generatedPixels
         };
 
