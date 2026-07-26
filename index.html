@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roblox Image to JSON Converter HD</title>
+    <title>Roblox Image to JSON Converter Ultra HD & Optimized</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -20,7 +20,7 @@
         .main-container {
             display: flex;
             gap: 20px;
-            max-width: 1000px;
+            max-width: 1050px;
             width: 100%;
         }
         .panel { 
@@ -31,10 +31,10 @@
             border: 1px solid #282836;
         }
         .left-panel { 
-            width: 360px; 
+            width: 380px; 
             display: flex; 
             flex-direction: column; 
-            gap: 15px; 
+            gap: 14px; 
             flex-shrink: 0;
         }
         .right-panel { 
@@ -72,7 +72,6 @@
             width: 100%;
         }
         
-        /* ФИКСИРОВАННЫЙ БОЛЬШОЙ КОНТЕЙНЕР ПРЕВЬЮ */
         .preview-viewport {
             width: 500px;
             height: 500px;
@@ -118,6 +117,8 @@
             line-height: 1.6; 
         }
         .stats-box strong { color: #58a6ff; }
+        .badge-green { color: #28c05a; font-weight: bold; }
+        
         .btn { 
             background: #23a04b; 
             color: white; 
@@ -136,23 +137,43 @@
 
 <div class="main-container">
     <div class="panel left-panel">
-        <h2>⚙️ Настройки картинки</h2>
+        <h2>⚡ Оптимизатор Изображений</h2>
         
         <div class="group">
             <label>Выберите изображение:</label>
             <input type="file" id="fileInput" accept="image/*">
         </div>
 
-        <!-- Разрешение в пикселях -->
         <div class="group">
-            <label><span>Детализация (качество/ширина):</span></label>
+            <label><span>Детализация (Ширина в px):</span></label>
             <div class="input-row">
-                <input type="range" id="resSlider" min="10" max="200" value="40">
-                <input type="number" id="resInput" value="40" min="10" max="200">
+                <input type="range" id="resSlider" min="10" max="300" value="60">
+                <input type="number" id="resInput" value="60" min="10" max="300">
             </div>
         </div>
 
-        <!-- Размер 1 пикселя в студах -->
+        <!-- Оптимизация (Greedy Meshing) -->
+        <label class="toggle-row">
+            <input type="checkbox" id="optimizeToggle" checked>
+            <span>🚀 Объединять блоки (Greedy Mesh)</span>
+        </label>
+
+        <div class="group">
+            <label><span>Допуск цвета (Tolerance):</span></label>
+            <div class="input-row">
+                <input type="range" id="tolSlider" min="0" max="100" value="15">
+                <input type="number" id="tolInput" value="15" min="0" max="100">
+            </div>
+        </div>
+
+        <div class="group">
+            <label><span>Упрощение палитры (Убирает шум):</span></label>
+            <div class="input-row">
+                <input type="range" id="palSlider" min="1" max="30" value="1">
+                <input type="number" id="palInput" value="1" min="1" max="30">
+            </div>
+        </div>
+
         <div class="group">
             <label><span>Размер пикселя X/Y (студы):</span></label>
             <div class="input-row">
@@ -161,7 +182,6 @@
             </div>
         </div>
 
-        <!-- Толщина блока в студах -->
         <div class="group">
             <label><span>Толщина блока Z (студы):</span></label>
             <div class="input-row">
@@ -170,15 +190,15 @@
             </div>
         </div>
 
-        <!-- Опция отображения пупырок (Studs) -->
         <label class="toggle-row">
             <input type="checkbox" id="studsToggle" checked>
-            <span>🧱 Пупырки Roblox (Studs / Сетка)</span>
+            <span>🧱 Отображать границы блоков</span>
         </label>
 
-        <!-- Блок со статистикой -->
         <div class="stats-box">
-            <div>📦 Всего блоков: <strong id="totalBlocks">0</strong> шт</div>
+            <div>📍 Исходно пикселей: <strong id="rawPixelsCount">0</strong></div>
+            <div>📦 Блоков в игре: <strong id="totalBlocksCount" class="badge-green">0</strong></div>
+            <div>⚡ Экономия: <strong id="savingsPercent" class="badge-green">0%</strong></div>
             <div>📐 Габариты: <strong id="dimensions">0 x 0 x 0</strong> студов</div>
         </div>
 
@@ -186,7 +206,7 @@
     </div>
 
     <div class="panel right-panel">
-        <h2>👁️ Вид в игре (500x500 Real-Time)</h2>
+        <h2>👁️ Превью Постройки</h2>
         <div class="preview-viewport">
             <canvas id="previewCanvas" class="preview-canvas"></canvas>
         </div>
@@ -197,36 +217,39 @@
     const fileInput = document.getElementById('fileInput');
     const resSlider = document.getElementById('resSlider');
     const resInput = document.getElementById('resInput');
+    const tolSlider = document.getElementById('tolSlider');
+    const tolInput = document.getElementById('tolInput');
+    const palSlider = document.getElementById('palSlider');
+    const palInput = document.getElementById('palInput');
     const sizeSlider = document.getElementById('sizeSlider');
     const sizeInput = document.getElementById('sizeInput');
     const thickSlider = document.getElementById('thickSlider');
     const thickInput = document.getElementById('thickInput');
     const studsToggle = document.getElementById('studsToggle');
+    const optimizeToggle = document.getElementById('optimizeToggle');
     
     const canvas = document.getElementById('previewCanvas');
     const ctx = canvas.getContext('2d');
     
     let loadedImage = null;
-    let generatedPixels = [];
+    let optimizedBlocks = [];
+    let rawPixelsCount = 0;
 
     function setupSync(slider, input, callback) {
-        slider.addEventListener('input', () => { 
-            input.value = slider.value; 
-            callback(); 
-        });
+        slider.addEventListener('input', () => { input.value = slider.value; callback(); });
         input.addEventListener('input', () => { 
             let val = parseFloat(input.value);
-            if (!isNaN(val)) {
-                slider.value = val; 
-                callback(); 
-            }
+            if (!isNaN(val)) { slider.value = val; callback(); }
         });
     }
 
     setupSync(resSlider, resInput, processImage);
+    setupSync(tolSlider, tolInput, processImage);
+    setupSync(palSlider, palInput, processImage);
     setupSync(sizeSlider, sizeInput, updateStats);
     setupSync(thickSlider, thickInput, updateStats);
     studsToggle.addEventListener('change', renderPreview);
+    optimizeToggle.addEventListener('change', processImage);
 
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -240,14 +263,31 @@
         reader.readAsDataURL(file);
     });
 
+    // Простая и предсказуемая дистанция цвета (Manhattan Distance)
+    function colorDistance(c1, c2) {
+        return Math.abs(c1[0] - c2[0]) + Math.abs(c1[1] - c2[1]) + Math.abs(c1[2] - c2[2]);
+    }
+
+    // Принудительное убирание микро-шума (Постеризация)
+    function applyPaletteReduction(color, step) {
+        if (step <= 1) return color;
+        return [
+            Math.round(color[0] / step) * step,
+            Math.round(color[1] / step) * step,
+            Math.round(color[2] / step) * step
+        ];
+    }
+
     function processImage() {
         if (!loadedImage) return;
 
-        const targetWidth = parseInt(resInput.value) || 40;
+        const targetWidth = parseInt(resInput.value) || 60;
         const aspectRatio = loadedImage.height / loadedImage.width;
         const targetHeight = Math.round(targetWidth * aspectRatio);
+        const tolerance = parseInt(tolInput.value) || 0;
+        const palStep = parseInt(palInput.value) || 1;
+        const doOptimize = optimizeToggle.checked;
 
-        // Офскрин холст для подсчета чистых данных
         const offCanvas = document.createElement('canvas');
         offCanvas.width = targetWidth;
         offCanvas.height = targetHeight;
@@ -255,16 +295,83 @@
         offCtx.drawImage(loadedImage, 0, 0, targetWidth, targetHeight);
         const imgData = offCtx.getImageData(0, 0, targetWidth, targetHeight).data;
 
-        generatedPixels = [];
+        // Создаем 2D сетку пикселей
+        const grid = Array.from({ length: targetHeight }, () => new Array(targetWidth).fill(null));
+        rawPixelsCount = 0;
+
         for (let y = 0; y < targetHeight; y++) {
             for (let x = 0; x < targetWidth; x++) {
-                const index = (y * targetWidth + x) * 4;
-                const a = imgData[index + 3];
+                const idx = (y * targetWidth + x) * 4;
+                const a = imgData[idx + 3];
                 if (a > 50) {
-                    generatedPixels.push({
+                    let color = [imgData[idx], imgData[idx + 1], imgData[idx + 2]];
+                    if (palStep > 1) {
+                        color = applyPaletteReduction(color, palStep * 5);
+                    }
+                    grid[y][x] = color;
+                    rawPixelsCount++;
+                }
+            }
+        }
+
+        optimizedBlocks = [];
+
+        if (!doOptimize) {
+            for (let y = 0; y < targetHeight; y++) {
+                for (let x = 0; x < targetWidth; x++) {
+                    if (grid[y][x]) {
+                        optimizedBlocks.push({
+                            x: x,
+                            y: (targetHeight - 1) - y,
+                            w: 1,
+                            h: 1,
+                            color: grid[y][x]
+                        });
+                    }
+                }
+            }
+        } else {
+            // Классический проверенный Greedy Meshing
+            const visited = Array.from({ length: targetHeight }, () => new Array(targetWidth).fill(false));
+
+            for (let y = 0; y < targetHeight; y++) {
+                for (let x = 0; x < targetWidth; x++) {
+                    if (visited[y][x] || !grid[y][x]) continue;
+
+                    const baseColor = grid[y][x];
+
+                    // 1. Расширяем по ширине (X)
+                    let w = 1;
+                    while (x + w < targetWidth && !visited[y][x + w] && grid[y][x + w] && colorDistance(baseColor, grid[y][x + w]) <= tolerance) {
+                        w++;
+                    }
+
+                    // 2. Расширяем по высоте (Y)
+                    let h = 1;
+                    let canExpandY = true;
+                    while (y + h < targetHeight && canExpandY) {
+                        for (let k = 0; k < w; k++) {
+                            if (visited[y + h][x + k] || !grid[y + h][x + k] || colorDistance(baseColor, grid[y + h][x + k]) > tolerance) {
+                                canExpandY = false;
+                                break;
+                            }
+                        }
+                        if (canExpandY) h++;
+                    }
+
+                    // Помечаем посещенными
+                    for (let dy = 0; dy < h; dy++) {
+                        for (let dx = 0; dx < w; dx++) {
+                            visited[y + dy][x + dx] = true;
+                        }
+                    }
+
+                    optimizedBlocks.push({
                         x: x,
-                        y: (targetHeight - 1) - y, // Точные координаты под сетку Roblox
-                        color: [imgData[index], imgData[index + 1], imgData[index + 2]]
+                        y: (targetHeight - 1) - (y + h - 1),
+                        w: w,
+                        h: h,
+                        color: baseColor
                     });
                 }
             }
@@ -276,18 +383,10 @@
     function renderPreview() {
         if (!loadedImage) return;
 
-        const targetWidth = parseInt(resInput.value) || 40;
+        const targetWidth = parseInt(resInput.value) || 60;
         const aspectRatio = loadedImage.height / loadedImage.width;
         const targetHeight = Math.round(targetWidth * aspectRatio);
 
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width = targetWidth;
-        offCanvas.height = targetHeight;
-        const offCtx = offCanvas.getContext('2d');
-        offCtx.drawImage(loadedImage, 0, 0, targetWidth, targetHeight);
-        const imgData = offCtx.getImageData(0, 0, targetWidth, targetHeight).data;
-
-        // Масштабируем пиксели внутри окна 500x500
         const maxBoxSize = 500;
         let cellSize = Math.floor(maxBoxSize / Math.max(targetWidth, targetHeight));
         if (cellSize < 1) cellSize = 1;
@@ -298,52 +397,19 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const drawStuds = studsToggle.checked;
 
-        for (let y = 0; y < targetHeight; y++) {
-            for (let x = 0; x < targetWidth; x++) {
-                const index = (y * targetWidth + x) * 4;
-                const r = imgData[index];
-                const g = imgData[index + 1];
-                const b = imgData[index + 2];
-                const a = imgData[index + 3];
+        for (const block of optimizedBlocks) {
+            const drawX = block.x * cellSize;
+            const drawY = ((targetHeight - 1) - (block.y + block.h - 1)) * cellSize;
+            const drawW = block.w * cellSize;
+            const drawH = block.h * cellSize;
 
-                if (a > 50) {
-                    const drawX = x * cellSize;
-                    const drawY = y * cellSize;
+            ctx.fillStyle = `rgb(${block.color[0]}, ${block.color[1]}, ${block.color[2]})`;
+            ctx.fillRect(drawX, drawY, drawW, drawH);
 
-                    // Отрисовка цвета блока
-                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-                    ctx.fillRect(drawX, drawY, cellSize, cellSize);
-
-                    // Отрисовка пупырок и грани блоков Roblox (Studs)
-                    if (drawStuds && cellSize >= 4) {
-                        // Граница (фаска блока)
-                        ctx.fillStyle = `rgba(0, 0, 0, 0.15)`;
-                        ctx.fillRect(drawX, drawY, cellSize, 1);
-                        ctx.fillRect(drawX, drawY, 1, cellSize);
-
-                        ctx.fillStyle = `rgba(255, 255, 255, 0.15)`;
-                        ctx.fillRect(drawX, drawY + cellSize - 1, cellSize, 1);
-                        ctx.fillRect(drawX + cellSize - 1, drawY, 1, cellSize);
-
-                        // Пупырка в центре (Stud)
-                        if (cellSize >= 7) {
-                            const centerX = drawX + cellSize / 2;
-                            const centerY = drawY + cellSize / 2;
-                            const radius = Math.max(1, cellSize * 0.22);
-
-                            ctx.beginPath();
-                            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-                            ctx.fillStyle = `rgba(255, 255, 255, 0.25)`;
-                            ctx.fill();
-
-                            ctx.beginPath();
-                            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-                            ctx.strokeStyle = `rgba(0, 0, 0, 0.25)`;
-                            ctx.lineWidth = 1;
-                            ctx.stroke();
-                        }
-                    }
-                }
+            if (drawStuds) {
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(drawX, drawY, drawW, drawH);
             }
         }
 
@@ -351,38 +417,32 @@
     }
 
     function updateStats() {
-        const count = generatedPixels.length;
+        const count = optimizedBlocks.length;
         const pxSize = parseFloat(sizeInput.value) || 0.05;
         const thick = parseFloat(thickInput.value) || 0.05;
-        
-        document.getElementById('totalBlocks').innerText = count.toLocaleString();
 
-        if (canvas.width && canvas.height) {
-            const targetWidth = parseInt(resInput.value) || 40;
-            const aspectRatio = loadedImage ? (loadedImage.height / loadedImage.width) : 1;
-            const targetHeight = Math.round(targetWidth * aspectRatio);
+        document.getElementById('rawPixelsCount').innerText = rawPixelsCount.toLocaleString();
+        document.getElementById('totalBlocksCount').innerText = count.toLocaleString();
 
+        const saved = rawPixelsCount > 0 ? Math.round((1 - (count / rawPixelsCount)) * 100) : 0;
+        document.getElementById('savingsPercent').innerText = saved + "%";
+
+        if (loadedImage) {
+            const targetWidth = parseInt(resInput.value) || 60;
+            const targetHeight = Math.round(targetWidth * (loadedImage.height / loadedImage.width));
             const widthStuds = (targetWidth * pxSize).toFixed(2);
             const heightStuds = (targetHeight * pxSize).toFixed(2);
             document.getElementById('dimensions').innerText = `${widthStuds} x ${heightStuds} x ${thick.toFixed(2)}`;
-
-            let tag = "";
-            if (widthStuds < 5) tag = "🔍 Крошечное (с ладошку)";
-            else if (widthStuds < 20) tag = "🧍 Среднее (в рост игрока)";
-            else if (widthStuds < 60) tag = "🏢 Большое (стена дома)";
-            else tag = "🚨 ОГРОМНОЕ (на всю карту!)";
-
-            document.getElementById('scaleTag').innerText = tag;
         }
     }
 
     document.getElementById('downloadBtn').addEventListener('click', () => {
-        if (generatedPixels.length === 0) return alert("Сначала загрузите картинку!");
+        if (optimizedBlocks.length === 0) return alert("Сначала загрузите картинку!");
         
         const data = {
             pixelSize: parseFloat(sizeInput.value) || 0.05,
             thickness: parseFloat(thickInput.value) || 0.05,
-            pixels: generatedPixels
+            blocks: optimizedBlocks
         };
 
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
